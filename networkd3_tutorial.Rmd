@@ -1,0 +1,372 @@
+---
+title: "An Introductory Guide to R Package - networkD3"
+author: "Neha Tiwari"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+library(networkD3)
+library(dplyr)
+```
+
+
+**Introduction**
+
+A visual representation of data, in the form of graphs, helps us gain actionable insights and make better data driven decisions based on them. Graph theory forms an essential part of Data Science and visualizing networks forms an important part of the arsenal of any data scientist.
+  
+A Network diagram shows interconnections between a set of entities. Each entity is represented by a Node and the connections between nodes are represented through links or edges. Network diagrams though initially used to represent network architecture have also applied in many data science use cases to demonstrate or look for relationships between entities. Some popular use cases for network diagrams are social media network analysis, process flow analysis, among others.
+
+There are many packages in R that allow us to visualize networks and flows, like igraph, ggraph. What sets networkD3 package apart is that it allows the user to create and customize D3, the JavaScript library for producing dynamic, interactive data visualizations, graphs directly from R. As the networkD3 package is an htmlwidget, it automatically builds interactive charts. Hence, it allows the user to zoom, hover nodes, reorganize the layout and more. Additionally, its not just restricted to simple network diagrams but has inbuilt functions for creating  dendograms as well as flow diagrams like sankey and chord diagrams in addition to force directed graphs,
+
+
+**Installation:**
+The first step required is to install the package from CRAN and then call the library. 
+
+```
+install.packages("networkD3")
+```
+
+**Usage:**
+
+Building a network charts requires information on nodes and links. Every graph and diagram has nodes, links and sometimes weights, which is the value associated with the edge. Besides being weighted or unweighted, the nodes can also be named, and associated with a group. The links can also be directed or undirected based on the use case. 
+
+Therefore, before calling the graph function the dataset has to be transformed into a node-link format. This can be achieved through regular data wrangling in R or through igraph package functions like igraph_to_networkd3(). 
+
+
+```{r}
+#load package
+
+library(networkD3)
+```
+
+**SIMPLE NETWORK GRAPHS:** 
+
+A simple network is as the name suggests is a simple graph connecting the given list of nodes via  specified links. The simpleNetwork() function creates D3.js simple network graphs. In a network graph, the underlying algorithm tries to position the nodes and links in an aesthetically pleasing manner, minimizing overlap and criss crossing of links.
+
+Function with complete set of arguments:
+
+```
+simpleNetwork(Data, Source = 1, Target = 2, height = NULL, width = NULL,
+linkDistance = 50, charge = -30, fontSize = 7, fontFamily = "serif",
+linkColour = "#666", nodeColour = "#3182bd", opacity = 0.6, zoom = F
+
+```
+
+The function accepts input in edge list format: each row specifies a link between 2 nodes. The function also requires a dataframe object with 2 columns: 'Source'and 'Target'.   
+
+Example:
+```{r}
+# Create Fake Data for a Simple Neural Network: 
+#with Input nodes: I1, I2; hidden layer nodes: H1, H2, H3, and Output node: O
+
+Source <- c("I1", "I1", "I1", "I2", "I2", "I2", "H1", "H2", "H3" )
+Target <- c("H1", "H2", "H3", "H1", "H2", "H3", "O", "O", "O")
+NetworkData <- data.frame(Source, Target)
+
+```
+
+In the above code block, we are initializing the dataframe composed of `Source` and `Target` nodes. The function adds links between the nodes in Source to those in Target. 
+
+The function arguments allow customization of the nodes, links and label features, like `nodeColour`, `fontFamily`, `fontSize`. They are easy to understand and the user can get a list of them with `help(simpleNetwork)`.
+
+Other options allow the user to control the layout, i.e. how nodes are distributed in the window, for example the `charge` argument.  NetworkD3 uses a force algorithm: each node is going to be attracted or repulsed depending on their connection degree. 
+
+Here we call the `simpleNetwork()` function for the above dataframe:
+```{r}
+# Create simple graph
+simpleNetwork(NetworkData)
+```
+
+The output can alternatively be assigned to a variable and the user can also interact with the nodes, hovering over the same zooms the node and its associated links, while fading the rest for a cleaner visual. The opacity of the nodes and links can be controlled here using `opacity` argument.
+
+
+Variation: 
+
+```{r}
+#customized link distance, link and node colors, font type and font size
+
+simpleNetwork(NetworkData, fontFamily = "sans-serif", linkDistance = 100, fontSize = 15, charge = -30, nodeColour = '#ff005a', linkColour = 'black')
+
+```
+
+
+**FORCE DIRECTED NETWORK GRAPHS:**
+
+The `forceNetwork()` function builds upon `simpleNetwork()` function by allow grouping of nodes by classes, adding weights to links, controlling node features and builds a D3 javascript force directed network graph. Both simple and force directed graphs layout is controlled by the force algorithm, however, in force-directed graphs the weight of the link is also factored in, unlike simple network graphs. 
+
+
+```
+forceNetwork(Links, Nodes, Source, Target, Value, NodeID, Nodesize, Group,
+height = NULL, width = NULL,
+colourScale = JS("d3.scaleOrdinal(d3.schemeCategory20);"), fontSize = 7,
+fontFamily = "serif", linkDistance = 50,
+linkWidth = JS("function(d) { return Math.sqrt(d.value); }"),
+radiusCalculation = JS(" Math.sqrt(d.nodesize)+6"), charge = -30,
+linkColour = "#666", opacity = 0.6, zoom = FALSE, legend = FALSE,
+arrows = FALSE, bounded = FALSE, opacityNoHover = 0,
+clickAction = NULL)
+
+```
+Example:    
+
+To make this plot, I am using the `MisJson` data, which is a data file of nodes from Knuth's Les Miserables characters data base and is a part of R datasets. The `MisNodes` data contains names of all the characters and the group each character name is associated with. The `Links` dataframe contains the source, target and value features, where value is the strength of association between source and target. 
+
+
+```{r ,results='asis'}
+#read in the data
+#using Kable for pretty printing
+
+library(kableExtra)
+
+data(MisLinks)
+data(MisNodes)
+
+kable(head(MisNodes))
+kable(head(MisLinks))
+
+```
+
+
+
+```{r}
+
+# Create graph
+forceNetwork(Links = MisLinks, Nodes = MisNodes, Source = "source", 
+Target = "target", Value = "value", NodeID = "name",
+Group = "group", opacity = 1, fontSize = 15, zoom = TRUE)
+```
+
+Variations:  
+
+1. Graph with legend and varying node radius:     
+
+- Node radius can be controlled by `radius calculation` argument with allows mathematical expressions for radius calculation
+
+```{r}
+
+forceNetwork(Links = MisLinks, Nodes = MisNodes, Source = "source",
+Target = "target", Value = "value", NodeID = "name",
+Nodesize = "size", fontSize = 15,
+radiusCalculation = "Math.sqrt(d.nodesize)+6",
+Group = "group", opacity = 1, legend = TRUE)
+
+```
+
+
+2. Graph with directed arrows from source to target:   
+
+- Coloring nodes by group, using `group` argument, we can better identify underlying associations, which can be enhanced by adding directed arrowheads, which is adjusted by `arrows=True` argument.  
+
+```{r}
+
+forceNetwork(Links = MisLinks, Nodes = MisNodes, Source = "source",
+Target = "target", Value = "value", NodeID = "name", Nodesize = "size", fontSize = 15,
+radiusCalculation = "Math.sqrt(d.nodesize)+6",
+Group = "group", opacity = 1, arrows = TRUE)
+
+```
+
+From the above graph, we can see that characters from the blue group mostly interacted within themselves, as their degree of connectivity with other groups is non-existent. 
+
+
+**RADIAL NETWORK GRAPHS:** 
+
+As the name suggests, radial networks arrange nodes and links in a radial pattern. Radial layouts can be useful for seeing patterns between and within groups.  However, this layout has difficulty scaling to hundreds of nodes, and edge bundling can make it difficult to count the number of links connecting to each node. A related visualization is the chord diagram, which visualizes aggregated connections between groups.    
+
+Function with complete list of arguments:
+```
+radialNetwork(List, height = NULL, width = NULL, fontSize = 10,
+fontFamily = "serif", linkColour = "#ccc", nodeColour = "#fff",
+nodeStroke = "steelblue", textColour = "#111", opacity = 0.9,
+margin = NULL)
+```
+
+The following example creates a radial network of Canada's provinces and their capitals. This example has been taken from networkD3 CRAN documentation.  It creates a nested list of parent and child nodes, with 'Canada' being the primary node with subsequent bifurcation at province level.  
+
+Example:  
+
+```{r}
+
+# Create tree from a hierarchical R list
+
+CanadaPC <- list(name = "Canada", children = list(list(name = "Newfoundland",
+children = list(list(name = "St. John's"))),
+list(name = "PEI",
+children = list(list(name = "Charlottetown"))),
+list(name = "Nova Scotia",
+children = list(list(name = "Halifax"))),
+list(name = "New Brunswick",
+children = list(list(name = "Fredericton"))),
+list(name = "Quebec",children = list(list(name = "Montreal"),
+list(name = "Quebec City"))),
+list(name = "Ontario",
+children = list(list(name = "Toronto"),
+list(name = "Ottawa"))),
+list(name = "Manitoba",
+children = list(list(name = "Winnipeg"))),
+list(name = "Saskatchewan",
+children = list(list(name = "Regina"))),
+list(name = "Nunavuet",
+children = list(list(name = "Iqaluit"))),
+list(name = "NWT",
+children = list(list(name = "Yellowknife"))),
+list(name = "Alberta",
+children = list(list(name = "Edmonton"))),
+list(name = "British Columbia",
+children = list(list(name = "Victoria"),
+list(name = "Vancouver"))),
+list(name = "Yukon",
+children = list(list(name = "Whitehorse")))
+))
+
+
+#call the graph function 
+
+radialNetwork(List = CanadaPC, fontSize = 15)
+
+```
+
+
+**DIAGONAL NETWORK:**
+
+The diagonal network is visually similar to the dendrogram function, with the difference being that the parent and children nodes are pre-formed unlike dendrograms underlying algorithm which creates these associations. Also, we cannot choose the graph height to cleave by number of clusters, unlike Dendrograms. 
+
+Function with complete set of arguments:  
+
+```
+diagonalNetwork(List, height = NULL, width = NULL, fontSize = 10,
+fontFamily = "serif", linkColour = "#ccc", nodeColour = "#fff",
+nodeStroke = "steelblue", textColour = "#111", opacity = 0.9,
+margin = NULL)
+```
+
+
+```{r}
+
+#using the example dataset from radial networks example
+
+diagonalNetwork(List = CanadaPC, fontSize = 15)
+
+
+```
+
+Similar to other graphs, the node and link characteristics can be customized using the function arguments like `linkColour`, `nodeColour`, `opacity`, etc.    
+
+
+
+**SANKEY DIAGRAMS:**
+
+A Sankey diagram allows us to study flows. Entities (nodes) are represented by rectangles or text. Arrows or arcs are used to show flows i.e. weigthed connections going from one node to another, between them. 
+
+The function with complete set of arguments:
+
+```
+sankeyNetwork(Links, Nodes, Source, Target, Value, NodeID, NodeGroup = NodeID,
+LinkGroup = NULL, units = "",
+colourScale = JS("d3.scaleOrdinal(d3.schemeCategory20);"), fontSize = 7,
+fontFamily = NULL, nodeWidth = 15, nodePadding = 10, margin = NULL,
+height = NULL, width = NULL, iterations = 32, sinksRight = TRUE)
+
+```
+
+The input data can be stored in a connection dataframe format similar to force network graphs. A connection data frame lists all the connections one by one in a data frame, with intensity for each flow. The nodes dataframe can be created from the links dataframe by extracting the set of unique nodes from it. The `sankeyNetwork()` function requires nodes connection dataframe by addressed by indices rather than names. The index starts from 0 as it as Javascipt library unlike R where index starts from 1. 
+
+Example:  
+
+```{r}
+
+#creating sample connection dataframe 
+links <- data.frame(
+  source = c("group_A","group_A", "group_B", "group_C", "group_C", "group_E"), 
+  target = c("group_C","group_D", "group_E", "group_F", "group_G", "group_H"), 
+  value =  c(2,3, 2, 3, 1, 3)
+  )
+
+#create a node data frame by selecting all unique entities from the links dataframe 
+nodes <- data.frame(
+  name=c(as.character(links$source), 
+  as.character(links$target)) %>% unique()
+)
+
+
+#reformat to connection node names with index starting from 0
+links$IDsource <- match(links$source, nodes$name)-1 
+links$IDtarget <- match(links$target, nodes$name)-1
+
+
+#make the diagram
+sankeyNetwork(Links = links, Nodes = nodes,
+              Source = "IDsource", Target = "IDtarget",
+              Value = "value", NodeID = "name",  fontSize = 15, 
+              sinksRight=FALSE)
+```
+
+
+We can color nodes following their attribution to a group. This can be done by adding a new group column in the 'nodes' dataframe and then assign a color to each group. 
+
+```{r}
+# Add a 'group' column to the nodes data frame:
+nodes$group <- as.factor(c("a","a","a","a","a","b","b","b"))
+ 
+# Give a color for each group:
+my_color <- 'd3.scaleOrdinal() .domain(["a", "b"]) .range(["orange", "red"])'
+ 
+# Make the Network
+p <- sankeyNetwork(Links = links, Nodes = nodes, Source = "IDsource", Target = "IDtarget", 
+              Value = "value", NodeID = "name",  fontSize = 15,
+              colourScale=my_color, NodeGroup="group")
+p
+
+```
+
+
+Following the same principle, we can control the color of each flows in the diagram: by assigning links to groups and then assigning colors to the groups. The following example colors links by assigning them to groups, and keeps the color of all nodes the same by assigning them to a single group `node_group`
+
+```{r}
+
+# Add a 'group' column to each connection:
+links$group <- as.factor(c("type_a","type_a","type_a","type_b","type_b","type_b"))
+ 
+# Add a 'group' column to each node
+nodes$group <- as.factor(c("node_group"))
+ 
+# Give a color for each group:
+my_color <- 'd3.scaleOrdinal() .domain(["type_a", "type_b", "node_group"]) .range(["#69b3a2", "steelblue", "grey"])'
+ 
+# Make the Network
+p <- sankeyNetwork(Links = links, Nodes = nodes, Source = "IDsource", Target = "IDtarget", 
+                   Value = "value", NodeID = "name",  fontSize = 15,
+                   colourScale=my_color, LinkGroup="group", NodeGroup="group")
+
+p
+```
+
+
+**SAVING WIDGETS**
+
+To save the graphs as html files we can use the `htmlwidgets` package and specify the file path. 
+
+```
+library(htmlwidgets)
+p <- sankeyNetwork(Links = links, Nodes = nodes,
+              Source = "IDsource", Target = "IDtarget",
+              Value = "value", NodeID = "name", 
+              sinksRight=FALSE)
+
+saveWidget(p, file="sankeyBasic.html")
+
+```
+
+**Ending Note:**
+
+The networkD3 package has combined the visualizatin power of D3.js with statistical analysis power of R. This tutorial just touches on only some of the things networkD3 package can do and intends to be a take off point for further analysis with it. For a deeper understanding of the same, the sources in the reference section are a helpful starting point. 
+
+
+**References:**
+
+- https://cran.r-project.org/web/packages/networkD3/networkD3.pdf     
+- https://christophergandrud.github.io/networkD3/    
+- https://www.rdocumentation.org/packages/networkD3/versions/0.4    
+- https://www.r-graph-gallery.com/257-input-formats-for-network-charts.html     
+
