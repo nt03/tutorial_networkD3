@@ -1,5 +1,6 @@
 # tutorial_networkD3
-A tutorial for R package 'networkD3' compiled as a part of data viz class assignment
+A tutorial for R package 'networkD3' compiled as a part of data viz class assignment.
+The files contain an RMD file containing the tutorial as well as the same rendered as an HTML file. 
 
 The tutorial contains:
 - package description 
